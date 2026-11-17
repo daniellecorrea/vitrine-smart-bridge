@@ -32,6 +32,19 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 355
     steps:
+      - name: corrente (enfileira o proximo run)
+        env:
+          GH_TOKEN: ${{ secrets.PRIVATE_REPO_TOKEN }}
+        run: |
+          # Antes de qualquer coisa: se o setup falhar, o proximo run ja esta na fila.
+          code=$(curl -s -o /dev/null -w "%{http_code}" -m 30 -X POST \
+            -H "Authorization: token ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/daniellecorrea/vitrine-smart-bridge/actions/workflows/bridge.yml/dispatches" \
+            -d '{"ref":"main"}')
+          echo "corrente: proximo run enfileirado (HTTP $code)"
+          test "$code" = "204"
+
       - name: checkout da ponte
         uses: actions/checkout@v4
 

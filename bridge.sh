@@ -74,8 +74,8 @@ for i in range(10):
 PY
 fi
 
-# Supervisao: 340 minutos, reinicia processo morto e mostra sinal de vida a cada 15 min.
-for i in $(seq 1 340); do
+# Supervisao: 5h44, reinicia processo morto e mostra sinal de vida a cada 15 min.
+for i in $(seq 1 344); do
   sleep 60
   if ! kill -0 "$APP_PID" 2>/dev/null; then
     echo "$(date -u +%FT%TZ) app morreu - reiniciando"

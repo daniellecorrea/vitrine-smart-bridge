@@ -49,6 +49,12 @@ echo -n "gateway: "
 curl -s -m 10 http://127.0.0.1:8080/health || true
 echo
 
+# Cobertura: registra quanto tempo este run promete cobrir. O app le esse
+# heartbeat e alerta ANTES de a janela vencer ou se o runner morrer no meio.
+echo "== heartbeat da ponte =="
+python app/scripts/ops_forecast.py --env-file runtime/app.env --heartbeat-start \
+  || echo "heartbeat inicial falhou (a ponte segue; previsao fica sem cobertura)"
+
 # 60s para o Baileys abrir a sessao vinda do Supabase.
 sleep 60
 echo "== validacao da sessao =="
@@ -86,6 +92,8 @@ for i in $(seq 1 344); do
     start_gw
   fi
   if [ $((i % 15)) -eq 0 ]; then
+    python app/scripts/ops_forecast.py --env-file runtime/app.env --heartbeat-tick \
+      >/dev/null 2>&1 || echo "$(date -u +%FT%TZ) heartbeat falhou"
     echo -n "$(date -u +%FT%TZ) min=$i gateway="
     curl -s -m 10 http://127.0.0.1:8080/health || echo -n "sem-health"
     echo

@@ -1,0 +1,78 @@
+name: bridge
+
+# Ponte de publicação sem PC: roda o app + gateway Baileys num runner Linux.
+# Repo público = minutos ilimitados no Actions (sem cartão, sem custo).
+# O código do app continua privado: o checkout usa um PAT guardado em secret.
+
+on:
+  schedule:
+    # 4 janelas/dia; cada job cobre ~5h40 (timeout 350) => ~23h20 de cobertura.
+    - cron: "0 0,6,12,18 * * *"
+  workflow_dispatch:
+    inputs:
+      test_channel:
+        description: "Teste manual: canal (whatsapp|telegram|instagram). Vazio = nao testa."
+        required: false
+        default: ""
+      test_item:
+        description: "Teste manual: item_id Shopee"
+        required: false
+        default: "43983526897"
+
+concurrency:
+  group: bridge
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  bridge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    steps:
+      - name: checkout do app privado
+        uses: actions/checkout@v4
+        with:
+          repository: daniellecorrea/vitrine-smart
+          ref: claude/migracao-vercel-supabase
+          token: ${{ secrets.PRIVATE_REPO_TOKEN }}
+          path: app
+          fetch-depth: 1
+
+      - name: python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: deps do app
+        run: pip install -r app/requirements.txt
+
+      - name: deps do gateway
+        run: npm ci --prefix app/wa-gateway
+
+      - name: envs
+        env:
+          APP_ENV_B64: ${{ secrets.APP_ENV_B64 }}
+          GATEWAY_ENV_B64: ${{ secrets.GATEWAY_ENV_B64 }}
+        run: |
+          mkdir -p runtime
+          printf '%s' "$APP_ENV_B64" | base64 -d > runtime/app.env
+          printf '%s' "$GATEWAY_ENV_B64" | base64 -d > runtime/gateway.env
+          # No runner o ngrok nao existe: IG usa o CDN da Shopee direto.
+          grep -v '^PUBLIC_BASE_URL=' runtime/app.env > runtime/app.tmp || true
+          printf '\nPUBLIC_BASE_URL=\n' >> runtime/app.tmp
+          mv runtime/app.tmp runtime/app.env
+          echo "app.env: $(grep -c '=' runtime/app.env) chaves"
+          echo "gateway.env: $(grep -c '=' runtime/gateway.env) chaves"
+
+      - name: bridge
+        env:
+          TEST_CHANNEL: ${{ inputs.test_channel }}
+          TEST_ITEM: ${{ inputs.test_item }}
+        run: bash bridge.sh

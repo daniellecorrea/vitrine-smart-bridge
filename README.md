@@ -24,11 +24,17 @@ minutos ilimitados no Actions, **sem cartão e sem custo**.
 
 ## Cadência
 
-- Cron a cada 3 horas, `concurrency: bridge` (um run por vez; o próximo
-  espera na fila). Cada job cobre ~5h44, então a cobertura é praticamente
-  contínua — o run seguinte assume quando o anterior termina.
+- **Corrente de runs, sem cron**: o primeiro step de cada run enfileira o
+  próximo via `workflow_dispatch` — o cron desta conta não dispara. A
+  `concurrency: bridge` garante um run por vez; o seguinte espera na fila.
+  Cada job cobre ~5h44, então a cobertura é praticamente contínua.
 - `timeout-minutes: 355` é proposital: fica abaixo das 6h do Actions e acima
   da janela de supervisão.
+- **Heartbeat de cobertura**: `bridge.sh` grava `--heartbeat-start` no
+  início (com o fim previsto) e renova a cada 15 min. O app lê esse
+  heartbeat e alerta **antes** de a janela vencer ou se o runner morrer.
+  Sem heartbeat, a previsão mostra a ponte como ⚪; vencida ou em silêncio
+  > 45 min vira 🔴 no privado da dona.
 
 ## Teste manual
 

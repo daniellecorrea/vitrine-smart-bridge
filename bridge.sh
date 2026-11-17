@@ -33,17 +33,6 @@ show() {
 start_app
 start_gw
 
-# Corrente de runs: cada run enfileira o proximo. Sem isso a ponte depende do
-# cron do GitHub, que falhou em 17/11 (nenhum run entre 10:30 e 12:00).
-if [ -n "${GH_TOKEN:-}" ]; then
-  code=$(curl -s -o /dev/null -w "%{http_code}" -m 30 -X POST \
-    -H "Authorization: token ${GH_TOKEN}" \
-    -H "Accept: application/vnd.github+json" \
-    "https://api.github.com/repos/${BRIDGE_REPO}/actions/workflows/bridge.yml/dispatches" \
-    -d '{"ref":"main"}')
-  echo "corrente: proximo run enfileirado (HTTP $code)"
-fi
-
 # Espera o app subir (max 150s) em vez de dormir cego.
 for i in $(seq 1 30); do
   sleep 5

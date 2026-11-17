@@ -31,6 +31,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 350
     steps:
+      - name: checkout da ponte
+        uses: actions/checkout@v4
+
       - name: checkout do app privado
         uses: actions/checkout@v4
         with:

@@ -79,4 +79,6 @@ jobs:
         env:
           TEST_CHANNEL: ${{ inputs.test_channel }}
           TEST_ITEM: ${{ inputs.test_item }}
+          GH_TOKEN: ${{ secrets.PRIVATE_REPO_TOKEN }}
+          BRIDGE_REPO: daniellecorrea/vitrine-smart-bridge
         run: bash bridge.sh

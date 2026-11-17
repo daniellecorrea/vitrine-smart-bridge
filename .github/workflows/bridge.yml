@@ -6,8 +6,9 @@ name: bridge
 
 on:
   schedule:
-    # 4 janelas/dia; cada job cobre ~5h40 (timeout 350) => ~23h20 de cobertura.
-    - cron: "0 0,6,12,18 * * *"
+    # A cada 3h: o run dura ~5h45, então o próximo já está na fila (concurrency)
+    # e a cobertura fica praticamente contínua, sem depender do cron de 6h.
+    - cron: "0 */3 * * *"
   workflow_dispatch:
     inputs:
       test_channel:
@@ -29,7 +30,7 @@ permissions:
 jobs:
   bridge:
     runs-on: ubuntu-latest
-    timeout-minutes: 350
+    timeout-minutes: 355
     steps:
       - name: checkout da ponte
         uses: actions/checkout@v4

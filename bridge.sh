@@ -12,6 +12,22 @@ APP_PID=""
 GW_PID=""
 BRIDGE_WA="${BRIDGE_WA:-0}"
 
+# Fim do run (ou cancelamento) precisa fechar o app com SIGTERM: o lifespan
+# devolve a conexão do advisory lock ao pooler. Sem isso a sessão do runner
+# morto pode segurar o lock e o run seguinte fica HTTP-only (o app tem uma
+# rede de segurança de 10 min, mas o shutdown limpo evita a espera).
+cleanup() {
+  if [ -n "$APP_PID" ] && kill -0 "$APP_PID" 2>/dev/null; then
+    echo "$(date -u +%FT%TZ) encerrando app (pid $APP_PID)"
+    kill -TERM "$APP_PID" 2>/dev/null || true
+    for _ in $(seq 1 10); do
+      kill -0 "$APP_PID" 2>/dev/null || break
+      sleep 1
+    done
+  fi
+}
+trap cleanup EXIT TERM INT
+
 start_app() {
   python bridge_app.py >> runtime/app.log 2>&1 &
   APP_PID=$!

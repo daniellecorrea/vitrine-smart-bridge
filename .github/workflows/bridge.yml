@@ -1,8 +1,10 @@
 name: bridge
 
-# Ponte de publicação sem PC: roda o app + gateway Baileys num runner Linux.
+# Ponte de publicação sem PC: roda o app num runner Linux.
 # Repo público = minutos ilimitados no Actions (sem cartão, sem custo).
 # O código do app continua privado: o checkout usa um PAT guardado em secret.
+# O gateway Baileys NÃO sobe aqui: sessão de WhatsApp é única e continua
+# no host atual (BRIDGE_WA=1 só quando o gateway local estiver parado).
 
 on:
   schedule:
@@ -62,16 +64,8 @@ jobs:
         with:
           python-version: "3.13"
 
-      - name: node
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-
       - name: deps do app
         run: pip install -r app/requirements.txt
-
-      - name: deps do gateway
-        run: npm ci --prefix app/wa-gateway
 
       - name: envs
         env:
@@ -90,6 +84,7 @@ jobs:
 
       - name: bridge
         env:
+          BRIDGE_WA: "0"
           TEST_CHANNEL: ${{ inputs.test_channel }}
           TEST_ITEM: ${{ inputs.test_item }}
           GH_TOKEN: ${{ secrets.PRIVATE_REPO_TOKEN }}
